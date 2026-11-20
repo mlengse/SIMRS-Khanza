@@ -37,6 +37,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.sql.Connection;
@@ -50,7 +51,6 @@ import javax.swing.JDialog;
 import javax.swing.JOptionPane;
 import javax.swing.JTable;
 import javax.swing.SwingUtilities;
-import javax.swing.Timer;
 import javax.swing.event.DocumentEvent;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableColumn;
@@ -172,6 +172,8 @@ import rekammedis.RMTransferPasienAntarRuang;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
+import javax.swing.Timer;
+import javax.swing.WindowConstants;
 import kepegawaian.DlgCariDokter;
 import kepegawaian.DlgCariPetugas;
 import permintaan.DlgPermintaanKonsultasiPerawat;
@@ -197,6 +199,7 @@ import rekammedis.RMReaksiTransfusi;
  * @author perpustakaan
  */
 public final class DlgRawatInap extends javax.swing.JDialog {
+    private Timer timerJam;
     private final DefaultTableModel tabModeDr,tabModePr,tabModeDrPr,
             tabModePemeriksaan,tabModeObstetri,tabModeGinekologi;
     private sekuel Sequel=new sekuel();
@@ -211,6 +214,9 @@ public final class DlgRawatInap extends javax.swing.JDialog {
     private boolean sukses=false;  
     private double ttljmdokter=0,ttljmperawat=0,ttlkso=0,ttlpendapatan=0,ttljasasarana=0,ttlbhp=0,ttlmenejemen=0;
     private String kode_poli="",kamar="",jenisbayar="",TANGGALMUNDUR="yes";
+    private RMRiwayatPerawatan riwayat;
+    private DlgPeresepanDokter resepobat;
+    private DlgPermintaanLaboratorium permintaanlab;
 
     /** Creates new form DlgRawatInap
      * @param parent
@@ -6633,17 +6639,34 @@ private void BtnEditKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_B
             if(Sequel.cariRegistrasi(TNoRw.getText())>0){
                 JOptionPane.showMessageDialog(rootPane,"Data billing sudah terverifikasi ..!!");
             }else{
-                DlgPeresepanDokter resep=new DlgPeresepanDokter(null,false);
-                resep.setSize(internalFrame1.getWidth(),internalFrame1.getHeight());
-                resep.setLocationRelativeTo(internalFrame1);
-                resep.setNoRm(TNoRw.getText(),DTPTgl.getDate(),cmbJam.getSelectedItem().toString(),cmbMnt.getSelectedItem().toString(),
-                        cmbDtk.getSelectedItem().toString(),KdDok.getText(),TDokter.getText(),"ranap");
-                resep.isCek();
-                resep.tampilobat();
-                resep.setVisible(true);
+                if (resepobat == null || !resepobat.isDisplayable()) {
+                    resepobat=new DlgPeresepanDokter(null,false);
+                    resepobat.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+                    resepobat.addWindowListener(new WindowAdapter() {
+                        @Override
+                        public void windowClosed(WindowEvent e) {
+                            resepobat=null;
+                        }
+                    }); 
+
+                    resepobat.setSize(internalFrame1.getWidth()-20,internalFrame1.getHeight()-20);
+                    resepobat.setLocationRelativeTo(internalFrame1);
+                }
+                if (resepobat == null) return;
+                if (!resepobat.isVisible()) {
+                    resepobat.setNoRm(TNoRw.getText(),DTPTgl.getDate(),cmbJam.getSelectedItem().toString(),cmbMnt.getSelectedItem().toString(),cmbDtk.getSelectedItem().toString(),KdDok.getText(),TDokter.getText(),"ranap");
+                    resepobat.isCek();
+                    resepobat.tampilobat();
+                }
+
+                if (resepobat.isVisible()) {
+                    resepobat.toFront();
+                    return;
+                }
+                resepobat.setVisible(true);
             }
         }
-    }//GEN-LAST:event_BtnResepObatActionPerformed
+    }
 
     private void BtnCopyResepActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_BtnCopyResepActionPerformed
         if(TNoRw.getText().trim().equals("")){
@@ -6737,13 +6760,31 @@ private void BtnEditKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_B
             TCari.requestFocus();
         }else{
             this.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-            DlgPermintaanLaboratorium dlgro=new DlgPermintaanLaboratorium(null,false);
-            dlgro.setSize(internalFrame1.getWidth(),internalFrame1.getHeight());
-            dlgro.setLocationRelativeTo(internalFrame1);
-            dlgro.emptTeks();
-            dlgro.isCek();
-            dlgro.setNoRm(TNoRw.getText(),"Ranap");
-            dlgro.setVisible(true);
+            if (permintaanlab == null || !permintaanlab.isDisplayable()) {
+                permintaanlab=new DlgPermintaanLaboratorium(null,false);
+                permintaanlab.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+                permintaanlab.addWindowListener(new WindowAdapter() {
+                    @Override
+                    public void windowClosed(WindowEvent e) {
+                        permintaanlab=null;
+                    }
+                }); 
+
+                permintaanlab.setSize(internalFrame1.getWidth()-20,internalFrame1.getHeight()-20);
+                permintaanlab.setLocationRelativeTo(internalFrame1);
+            }
+            if (permintaanlab == null) return;
+            if (!permintaanlab.isVisible()) {
+                permintaanlab.emptTeks();
+                permintaanlab.isCek();
+                permintaanlab.setNoRm(TNoRw.getText(),"Ranap");
+            }
+
+            if (permintaanlab.isVisible()) {
+                permintaanlab.toFront();
+                return;
+            }
+            permintaanlab.setVisible(true);
             this.setCursor(Cursor.getDefaultCursor());
         }
     }//GEN-LAST:event_BtnPermintaanLabActionPerformed
@@ -6837,11 +6878,29 @@ private void BtnEditKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_B
             TCari.requestFocus();
         }else{
             this.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-            RMRiwayatPerawatan resume=new RMRiwayatPerawatan(null,true);
-            resume.setNoRm(TNoRM.getText(),TPasien.getText());
-            resume.setSize(internalFrame1.getWidth(),internalFrame1.getHeight());
-            resume.setLocationRelativeTo(internalFrame1);
-            resume.setVisible(true);
+            if (riwayat == null || !riwayat.isDisplayable()) {
+                riwayat=new RMRiwayatPerawatan(null,false);
+                riwayat.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+                riwayat.addWindowListener(new WindowAdapter() {
+                    @Override
+                    public void windowClosed(WindowEvent e) {
+                        riwayat=null;
+                    }
+                });
+
+                riwayat.setSize(internalFrame1.getWidth()-20,internalFrame1.getHeight()-20);
+                riwayat.setLocationRelativeTo(internalFrame1);
+            }
+            if (riwayat == null) return;
+            if (!riwayat.isVisible()) {
+                riwayat.setNoRm(TNoRM.getText(),TPasien.getText());
+            }
+
+            if (riwayat.isVisible()) {
+                riwayat.toFront();
+                return;
+            }
+            riwayat.setVisible(true); 
             this.setCursor(Cursor.getDefaultCursor());
         }
     }//GEN-LAST:event_BtnRiwayatActionPerformed
@@ -10526,7 +10585,8 @@ private void BtnEditKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_B
             }
         };
         // Timer
-        new Timer(1000, taskPerformer).start();
+        timerJam = new javax.swing.Timer(1000, taskPerformer);
+        timerJam.start();
     }
 
     private void tampilPemeriksaan() {
@@ -12770,7 +12830,18 @@ private void BtnEditKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_B
     
     @Override
     public void dispose() {
+        if (timerJam != null) {
+            timerJam.stop();
+        }
         executor.shutdownNow();
         super.dispose();
+    }
+    
+    @Override
+    public void addNotify() {
+        super.addNotify();
+        if (timerJam != null && !timerJam.isRunning()) {
+            timerJam.start();
+        }
     }
 }
